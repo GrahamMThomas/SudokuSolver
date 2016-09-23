@@ -193,8 +193,11 @@ class Matrix
 		for row in 0..8
 			for col in 0..8
 				if self[row,col].is_a? Element
-					self.InsertNumberIntoBlank(row,col,self[row,col].possibleNumbers[0]) if self[row,col].possibleNumbers.count == 1
-					self.InsertNumberIntoBlank(row,col,self[row,col].relativeNumbers[0]) if self[row,col].relativeNumbers.count == 1
+					if self[row,col].possibleNumbers.count == 1
+						self.InsertNumberIntoBlank(row,col,self[row,col].possibleNumbers[0]) 
+					elsif self[row,col].relativeNumbers.count == 1
+						self.InsertNumberIntoBlank(row,col,self[row,col].relativeNumbers[0])
+					end
 				end
 			end
 		end
@@ -238,9 +241,9 @@ until ['1','2','3'].include? userSelection
 	userSelection = gets.chomp
 end
 
-if userSelection #= '2'
+if userSelection = '2'
 	puts "Enter Filename"
-	userFileName = "SudokuHard1.txt"#gets.chomp
+	userFileName = gets.chomp
 	puzzle.LoadMatrixFromFile(userFileName)
 elsif userSelection != '1'
 	exit
