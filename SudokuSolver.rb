@@ -1,27 +1,26 @@
 #Sudoku Solver
 require 'matrix'
-
 $solved = FALSE
 $stuck = FALSE
-#Default Matrix if user does not specify one
-puzzle = Matrix[
-	['-', '-', '-', '2', '6', '-', '7', '-', '1'],
-	['6', '8', '-', '-', '7', '-', '-', '9', '-'],
-	['1', '9', '-', '-', '-', '4', '5', '-', '-'],
-	['8', '2', '-', '1', '-', '-', '-', '4', '-'],
-	['-', '-', '4', '6', '-', '2', '9', '-', '-'],
-	['-', '5', '-', '-', '-', '3', '-', '2', '8'],
-	['-', '-', '9', '3', '-', '-', '-', '7', '4'],
-	['-', '4', '-', '-', '5', '-', '-', '3', '6'],
-	['7', '-', '3', '-', '1', '8', '-', '-', '-']
-]
 
+module SudokuUtils
+	#Opens a file and creates a long string containing the characters
+	def self.OpenFile(filename)
+		fileContents = ''
+		File.open(filename, "r") do |f|
+			f.each_line do |line|
+				fileContents += line.chomp
+			end
+		end
+		fileContents
+	end
+end
 
-class Matrix
+class Sudoku < Matrix
 	@@allPossibleNumbers = ['1','2','3','4','5','6','7','8','9']
 
 	def LoadMatrixFromFile(filename)
-		fileContents = OpenFile(filename)
+		fileContents = SudokuUtils.OpenFile(filename)
 		for row in 0..8
 			for col in 0..8
 				self[row,col] = fileContents[0]
@@ -208,31 +207,27 @@ end
 
 
 #Each blank sudoku square will be filled with an element containing potential
-# => values. As well as a display character telling the print method what to show.
-class Element
-	attr_accessor :possibleNumbers
-	attr_accessor :relativeNumbers
-
-	@@displayCharacter = '.'
-
+#values. As well as a display character telling the print method what to show.
+Element = Struct.new(:possibleNumbers, :relativeNumbers) do
+	@@displayCharacter = "."
 	def to_s
 		@@displayCharacter
 	end
-
-end
-
-#Opens a file and creates a long string containing the characters
-def OpenFile(filename)
-	fileContents = ''
-	File.open(filename, "r") do |f|
-		f.each_line do |line|
-			fileContents += line.chomp
-		end
-	end
-	fileContents
 end
 
 
+#Default Matrix if user does not specify one
+puzzle = Sudoku[
+	['-', '-', '-', '2', '6', '-', '7', '-', '1'],
+	['6', '8', '-', '-', '7', '-', '-', '9', '-'],
+	['1', '9', '-', '-', '-', '4', '5', '-', '-'],
+	['8', '2', '-', '1', '-', '-', '-', '4', '-'],
+	['-', '-', '4', '6', '-', '2', '9', '-', '-'],
+	['-', '5', '-', '-', '-', '3', '-', '2', '8'],
+	['-', '-', '9', '3', '-', '-', '-', '7', '4'],
+	['-', '4', '-', '-', '5', '-', '-', '3', '6'],
+	['7', '-', '3', '-', '1', '8', '-', '-', '-']
+]
 
 #User Prompts
 userSelection = 0
@@ -241,7 +236,7 @@ until ['1','2','3'].include? userSelection
 	userSelection = gets.chomp
 end
 
-if userSelection = '2'
+if userSelection == '2'
 	puts "Enter Filename"
 	userFileName = gets.chomp
 	puzzle.LoadMatrixFromFile(userFileName)
