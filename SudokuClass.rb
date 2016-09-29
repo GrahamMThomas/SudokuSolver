@@ -25,6 +25,7 @@ class Sudoku < Matrix
 		self.each_with_index do |blankSpace, row, col|
 			if blankSpace == '-'
 				blankSpace = Element.new
+				blankSpace.possibleNumbers = []
 				blankSpace.relativeNumbers = []
 				self[row,col] = blankSpace
 			end
@@ -59,7 +60,7 @@ class Sudoku < Matrix
 	#This method will combine all methods for available numbers and will 
 	#return only numbers in all 3 outputs
 	def CalculatePossibleNumbersForSquare(row,col)
-		numbersAvailableForSquare = self.AvailableNumbersInBox(row,col) & 
+		self[row,col].possibleNumbers = self.AvailableNumbersInBox(row,col) & 
 									self.AvailableNumbersInRowOrCol { |i,arr| arr.push(self[row,i].to_s) } &
 									self.AvailableNumbersInRowOrCol { |i,arr| arr.push(self[i,col].to_s) }
 	end
@@ -69,7 +70,7 @@ class Sudoku < Matrix
 		@stuck = TRUE
 		SudokuUtils.LoopPuzzle do |row, col|
 			if self[row,col].is_a? Element
-				self[row,col].possibleNumbers = self.CalculatePossibleNumbersForSquare(row,col)
+				self.CalculatePossibleNumbersForSquare(row,col)
 			end
 		end
 	end
@@ -86,7 +87,7 @@ class Sudoku < Matrix
 				possibilitiesForRow = possibilitiesForRow | self.CalculatePossibleNumbersForSquare(row,i)
 			end
 		end
-		self[row,col].possibleNumbers - possibilitiesForRow
+		self[row,col].possibleNumbers - possibilitiesForRow		
 	end
 
 	#Checks column to see if this square is the only square that can be a number.
@@ -120,10 +121,11 @@ class Sudoku < Matrix
 						 		CheckColAvailabilityForSquare(row,col),
 						 		CheckBoxAvailabilityForSquare(row,col)]
 		relativePossibilities.each do |possNumber| #If any of the three arrays only have one number
-			if possNumber.count == 1
+			if possNumber and possNumber.count == 1
 				self[row,col].relativeNumbers = possNumber
 			end
 		end
+		self[row,col].relativeNumbers
 	end
 
 	def CheckAvailabilityForEachSquare
