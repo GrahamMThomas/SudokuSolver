@@ -18,7 +18,7 @@ end
 case userSelection
 when '1'
 	puts "Running Default Puzzle"
-	puzzle.LoadMatrixFromFile('SudokuDefault.txt')
+	puzzle.LoadMatrixFromFile('Puzzles/SudokuDefault.txt')
 when '2'
 	puts "Enter Filename"
 	userFileName = gets.chomp
