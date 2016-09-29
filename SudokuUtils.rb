@@ -13,6 +13,10 @@ module SudokuUtils
 			puts "[ERROR] Could not read file"
 			exit
 		end
+		if fileContents.length != 81
+			puts "Not a sudoku puzzle. Character count not equal 81." 
+			exit
+		end
 		fileContents
 	end
 
