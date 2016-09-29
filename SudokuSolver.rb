@@ -1,7 +1,11 @@
 #Sudoku Solver
 require 'matrix'
-$solved = FALSE
+
+#Stuck is a variable which turns to true with there are no more easy insertions to be made.
 $stuck = FALSE
+
+#Solved is set to true when the advanced logic can no longer insert any numbers.
+$solved = FALSE
 
 module SudokuUtils
 	#Opens a file and creates a long string containing the characters
@@ -20,6 +24,7 @@ module SudokuUtils
 		fileContents
 	end
 
+	#Prints the Matrix is a human readable format
 	def self.PrintReadable(puzzle)
 		print '| --------Puzzle--------'
 		i = 0
@@ -46,22 +51,18 @@ end
 class Sudoku < Matrix
 	@@allPossibleNumbers = ['1','2','3','4','5','6','7','8','9']
 
+	#Loads a string from a file and creates a matrix.
 	def LoadMatrixFromFile(filename)
 		fileContents = SudokuUtils.OpenFile(filename)
-		for row in 0..8
-			for col in 0..8
-				self[row,col] = fileContents[0]
-				fileContents[0] = ''
-			end
+		SudokuUtils.LoopPuzzle do |row,col|
+			self[row,col] = fileContents[0]
+			fileContents[0] = ''
 		end
+		self.InitializeBlanks
 	end
-
-	#Prints the Matrix is a human readable format
-	
 
 	#Create an Element object in every blank square
 	def InitializeBlanks
-		i = 0
 		self.each_with_index do |blankSpace, row, col|
 			if blankSpace == '-'
 				blankSpace = Element.new
@@ -108,7 +109,9 @@ class Sudoku < Matrix
 									self.AvailableNumbersInRowOrCol { |i,arr| arr.push(self[i,col].to_s) }
 	end
 
+	#Loops through puzzle and run a method all all of the elements.
 	def CalculatePossibleNumbersForEachSquare()
+		$stuck = TRUE
 		SudokuUtils.LoopPuzzle do |row, col|
 			if self[row,col].is_a? Element
 				self[row,col].possibleNumbers = self.CalculatePossibleNumbersForSquare(row,col)
@@ -120,6 +123,7 @@ class Sudoku < Matrix
 #---------------------------Check For Square Availability Based on Surrounding Squares------------------------------
 #These Methods will check to see if you can determine the value for a square by looking at the lanes around it.
 
+	#Checks row to see if this square is the only square that can be a number.
 	def CheckRowAvailabilityForSquare(row,col)
 		possibilitiesForRow = []
 		for i in 0..8
@@ -130,6 +134,7 @@ class Sudoku < Matrix
 		self[row,col].possibleNumbers - possibilitiesForRow
 	end
 
+	#Checks column to see if this square is the only square that can be a number.
 	def CheckColAvailabilityForSquare(row,col)
 		possibilitiesForCol = []
 		for i in 0..8
@@ -140,6 +145,7 @@ class Sudoku < Matrix
 		self[row,col].possibleNumbers - possibilitiesForCol
 	end
 
+	#Checks box to see if this square is the only square that can be a number.
 	def CheckBoxAvailabilityForSquare(row,col)
 		possibilitiesForBox = []
 		for rowIterator in 0..2
@@ -153,13 +159,14 @@ class Sudoku < Matrix
 		self[row,col].possibleNumbers - possibilitiesForBox
 	end
 
+
 	def CheckAvailabilityForSquare(row,col)
+		#Creates a array of three result lists.
 		relativePossibilities = [CheckRowAvailabilityForSquare(row,col),
 						 		CheckColAvailabilityForSquare(row,col),
 						 		CheckBoxAvailabilityForSquare(row,col)]
-		relativePossibilities.each do |possNumber|
+		relativePossibilities.each do |possNumber| #If any of the three arrays only have one number
 			if possNumber.count == 1
-				$solved = FALSE
 				self[row,col].relativeNumbers = possNumber
 			end
 		end
@@ -180,9 +187,12 @@ class Sudoku < Matrix
 	def InsertNumberIntoBlank(row,col,number)
 		puts "Inserting #{number} into (#{row+1},#{col+1})" #Added 1 for more natural human coordinates
 		self[row,col] = number
-		$stuck = FALSE
+		$stuck,$solved = FALSE
 	end
 
+	##
+	#This method first checks the possible numbers, then the relative numbers.
+	#If either is 1, then insert a number into that square.
 	def InsertNumberIntoEachBlank()
 		SudokuUtils.LoopPuzzle do |row, col|
 			if self[row,col].is_a? Element
@@ -220,6 +230,8 @@ puzzle = Sudoku[
 	['-', '4', '-', '-', '5', '-', '-', '3', '6'],
 	['7', '-', '3', '-', '1', '8', '-', '-', '-']
 ]
+puzzle.InitializeBlanks()
+
 
 #User Prompts
 userSelection = 0
@@ -237,13 +249,11 @@ elsif userSelection != '1'
 end
 
 #Setup
-puzzle.InitializeBlanks()
 SudokuUtils.PrintReadable(puzzle)
 
 #-----------MAIN
 #Loop Continuously until no more spaces contain an 'Element'
 until $solved
-	$stuck = TRUE
 	puzzle.CalculatePossibleNumbersForEachSquare
 	puzzle.InsertNumberIntoEachBlank
 	if $stuck
