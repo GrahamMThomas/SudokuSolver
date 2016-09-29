@@ -11,3 +11,4 @@ Finally, I decided to learn how to use `minitest` which I highly recommend. I im
 
 Pretty happy with it and would love any suggestions to make it better so I know for next time!
 
+*NOTE:* I have tested it on Easy, Medium, and Hard puzzles. Easy and Medium puzzles will be solved, but Hard puzzles will not be. It solves about a third of it before it needs logic that I have not implemented yet.
