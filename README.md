@@ -5,5 +5,9 @@ First, I wrote this the best I possibly could with my current Ruby knowledge. Go
 
 Next, I took an advanced course in Ruby to learn about all the neat things you can do with it.
 
-After spending a collective 10-15 hours on the course, I refactored my program and definitely cleaned it up. Pretty happy with it and would love any suggestions to make it better so I know for next time!
+After spending a collective 10-15 hours on the course, I refactored my program and definitely cleaned it up. 
+
+Finally, I decided to learn how to use `minitest` which I highly recommend. I implemented unit test so I will know how to do it next time to I can code with the TDD (Test-Driven Development). This philosophy sounded good on paper, unfortunately I haven't tried it out yet. If it yield any results like when I implemented it for this project (I found multiple unintended behaviors) I have a feeling I will like that method.
+
+Pretty happy with it and would love any suggestions to make it better so I know for next time!
 
