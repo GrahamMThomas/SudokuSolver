@@ -7,13 +7,40 @@ module SudokuUtils
 	#Opens a file and creates a long string containing the characters
 	def self.OpenFile(filename)
 		fileContents = ''
-		File.open(filename, "r") do |f|
-			f.each_line do |line|
-				fileContents += line.chomp
+		begin
+			File.open(filename, "r") do |f|
+				f.each_line do |line|
+					fileContents += line.chomp
+				end
 			end
+		rescue
+			puts "[ERROR] Could not read file"
+			exit
 		end
 		fileContents
 	end
+
+	def self.PrintReadable(puzzle)
+		print '| --------Puzzle--------'
+		i = 0
+		puzzle.each do |number|
+			print "|\n" if i % 9 == 0
+			print "| " if i % 3 == 0
+			print "#{'-'*21} |\n| " if i % 27 == 0 and i != 0
+			print number.to_s + " "
+			i += 1
+		end
+		puts "|\n| ----------------------|\n\n"
+	end
+
+	def self.LoopPuzzle(&block)
+		for row in 0..8
+			for col in 0..8
+				block.call(row,col)
+			end
+		end
+	end
+
 end
 
 class Sudoku < Matrix
@@ -30,18 +57,7 @@ class Sudoku < Matrix
 	end
 
 	#Prints the Matrix is a human readable format
-	def PrintReadable
-		print '| --------Puzzle--------'
-		i = 0
-		self.each do |number|
-			print "|\n" if i % 9 == 0
-			print "| " if i % 3 == 0
-			print "#{'-'*21} |\n| " if i % 27 == 0 and i != 0
-			print number.to_s + " "
-			i += 1
-		end
-		puts "|\n| ----------------------|\n\n"
-	end
+	
 
 	#Create an Element object in every blank square
 	def InitializeBlanks
@@ -58,34 +74,23 @@ class Sudoku < Matrix
 
 
 #-----------------------------Simple Available Number Methods------------------------------
-	#Returns all numbers not present in row of the square passed as a parameter
-	def AvailableNumbersInRow(row,col)
-		allActualNumbers = []
-		for i in 0..9
-			allActualNumbers.push(self[row,i].to_s)
-		end
-		#allActualNumbers.each {|num| print "#{num}, "}
-		@@allPossibleNumbers - allActualNumbers
-	end
+#These methods simply find the numbers that are not located in a row, column, or box
 
-	#Returns all numbers not present in row of the square passed as a parameter
-	def AvailableNumbersInCol(row,col)
+	#This method takes a block which will push the row or column into an array.
+	def AvailableNumbersInRowOrCol(&block)
 		allActualNumbers = []
 		for i in 0..9
-			allActualNumbers.push(self[i,col].to_s)
+			block.call(i,allActualNumbers)
 		end
-		#allActualNumbers.each {|num| print "#{num}"}
 		@@allPossibleNumbers - allActualNumbers
 	end
 
 	#Returns all numbers not present in box of the square passed as a parameter
 	def AvailableNumbersInBox(row,col)
 		allActualNumbers = []
-		@@BoxRow = row/3
-		@@BoxCol = col/3	
 		for rowIterator in 0..2
 			for colIterator in 0..2
-				allActualNumbers.push(self[rowIterator+3*@@BoxRow, colIterator+3*@@BoxCol].to_s)
+				allActualNumbers.push(self[rowIterator+3*(row/3), colIterator+3*(col/3)].to_s)
 			end
 		end
 		@@allPossibleNumbers - allActualNumbers
@@ -94,28 +99,26 @@ class Sudoku < Matrix
 
 #-----------------------------Calculate Potential Numbers----------------------------------	
 
+	##
 	#This method will combine all three methods for available numbers and will 
-	# => return only numbers in all 3 outputs
+	#return only numbers in all 3 outputs
 	def CalculatePossibleNumbersForSquare(row,col)
-		numbersAvailableForSquare = self.AvailableNumbersInRow(row,col) & 
-									self.AvailableNumbersInCol(row,col) & 
-									self.AvailableNumbersInBox(row,col)
-		numbersAvailableForSquare
+		numbersAvailableForSquare = self.AvailableNumbersInBox(row,col) & 
+									self.AvailableNumbersInRowOrCol { |i,arr| arr.push(self[row,i].to_s) } &
+									self.AvailableNumbersInRowOrCol { |i,arr| arr.push(self[i,col].to_s) }
 	end
 
 	def CalculatePossibleNumbersForEachSquare()
-		for row in 0..8
-			for col in 0..8
-				if self[row,col].is_a? Element
-					self[row,col].possibleNumbers = self.CalculatePossibleNumbersForSquare(row,col)
-				end
+		SudokuUtils.LoopPuzzle do |row, col|
+			if self[row,col].is_a? Element
+				self[row,col].possibleNumbers = self.CalculatePossibleNumbersForSquare(row,col)
 			end
 		end
 	end
 
 
-#---------------------------Check For Whole Row Availability------------------------------
-#       These Methods will determine if you can isolate a value by looking and the lanes around it.
+#---------------------------Check For Square Availability Based on Surrounding Squares------------------------------
+#These Methods will check to see if you can determine the value for a square by looking at the lanes around it.
 
 	def CheckRowAvailabilityForSquare(row,col)
 		possibilitiesForRow = []
@@ -139,15 +142,11 @@ class Sudoku < Matrix
 
 	def CheckBoxAvailabilityForSquare(row,col)
 		possibilitiesForBox = []
-		@@BoxRow = row/3
-		@@BoxCol = col/3	
 		for rowIterator in 0..2
 			for colIterator in 0..2
-				if self[rowIterator+3*@@BoxRow, colIterator+3*@@BoxCol].is_a? Element and not
-							(rowIterator+3*@@BoxRow == row and colIterator+3*@@BoxCol == col)
-					possibilitiesForBox = possibilitiesForBox | self.CalculatePossibleNumbersForSquare(rowIterator+3*@@BoxRow, colIterator+3*@@BoxCol)
-					if row == 2 and col == 6
-					end
+				if self[rowIterator+3*(row/3), colIterator+3*(col/3)].is_a? Element and not
+					   (rowIterator+3*(row/3) == row and colIterator+3*(col/3) == col)
+					possibilitiesForBox = possibilitiesForBox | self.CalculatePossibleNumbersForSquare(rowIterator+3*(row/3), colIterator+3*(col/3))
 				end
 			end
 		end
@@ -158,7 +157,7 @@ class Sudoku < Matrix
 		relativePossibilities = [CheckRowAvailabilityForSquare(row,col),
 						 		CheckColAvailabilityForSquare(row,col),
 						 		CheckBoxAvailabilityForSquare(row,col)]
-		for possNumber in relativePossibilities
+		relativePossibilities.each do |possNumber|
 			if possNumber.count == 1
 				$solved = FALSE
 				self[row,col].relativeNumbers = possNumber
@@ -169,12 +168,8 @@ class Sudoku < Matrix
 
 	def CheckAvailabilityForEachSquare()
 		$solved = TRUE
-		for row in 0..8
-			for col in 0..8
-				if self[row,col].is_a? Element
-					self.CheckAvailabilityForSquare(row,col)
-				end
-			end
+		SudokuUtils.LoopPuzzle do |row,col|
+			self.CheckAvailabilityForSquare(row,col) if self[row,col].is_a? Element
 		end
 	end
 
@@ -183,20 +178,18 @@ class Sudoku < Matrix
 #------------------------------------Insertion Methods-------------------------------------
 
 	def InsertNumberIntoBlank(row,col,number)
-		puts "Inserting #{number} into (#{row+1},#{col+1})" #Added 1 for more natural coordinates
+		puts "Inserting #{number} into (#{row+1},#{col+1})" #Added 1 for more natural human coordinates
 		self[row,col] = number
 		$stuck = FALSE
 	end
 
 	def InsertNumberIntoEachBlank()
-		for row in 0..8
-			for col in 0..8
-				if self[row,col].is_a? Element
-					if self[row,col].possibleNumbers.count == 1
-						self.InsertNumberIntoBlank(row,col,self[row,col].possibleNumbers[0]) 
-					elsif self[row,col].relativeNumbers.count == 1
-						self.InsertNumberIntoBlank(row,col,self[row,col].relativeNumbers[0])
-					end
+		SudokuUtils.LoopPuzzle do |row, col|
+			if self[row,col].is_a? Element
+				if self[row,col].possibleNumbers.count == 1
+					self.InsertNumberIntoBlank(row,col,self[row,col].possibleNumbers[0]) 
+				elsif self[row,col].relativeNumbers.count == 1
+					self.InsertNumberIntoBlank(row,col,self[row,col].relativeNumbers[0])
 				end
 			end
 		end
@@ -209,9 +202,8 @@ end
 #Each blank sudoku square will be filled with an element containing potential
 #values. As well as a display character telling the print method what to show.
 Element = Struct.new(:possibleNumbers, :relativeNumbers) do
-	@@displayCharacter = "."
 	def to_s
-		@@displayCharacter
+		"."
 	end
 end
 
@@ -246,7 +238,7 @@ end
 
 #Setup
 puzzle.InitializeBlanks()
-puzzle.PrintReadable()
+SudokuUtils.PrintReadable(puzzle)
 
 #-----------MAIN
 #Loop Continuously until no more spaces contain an 'Element'
@@ -258,5 +250,5 @@ until $solved
 		puzzle.CheckAvailabilityForEachSquare
 		puzzle.InsertNumberIntoEachBlank
 	end
-	puzzle.PrintReadable
+	SudokuUtils.PrintReadable(puzzle)
 end
