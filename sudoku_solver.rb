@@ -29,4 +29,4 @@ end
 
 SudokuUtils.print_readable(puzzle)
 
-puzzle.Solve
+puzzle.solve_puzzle
